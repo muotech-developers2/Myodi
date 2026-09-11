@@ -1,0 +1,91 @@
+:root {
+    --bg-dark: #3d0c56;
+    --panel-dark: #4d1f6d;
+    --panel-light: #f3f4f6;
+    --brand-gold: #f2c84b;
+    --brand-red: #e11d48;
+    --brand-green: #18a957;
+    --text-dark: #1d1d1d;
+    --table-head: #ece7ef;
+}
+
+body {
+    background: linear-gradient(180deg, #3b0f4d 0%, #4d1d66 100%);
+    color: var(--text-dark);
+    font-family: Arial, sans-serif;
+}
+
+.analysis-panel {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+}
+
+.page-title {
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.card-body {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 18px;
+}
+
+.form-label,
+#results-section h2 {
+    color: #fff;
+}
+
+.results-table {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.results-table thead th {
+    background: var(--table-head);
+    color: #111;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.preview-image {
+    max-height: 420px;
+    border-radius: 12px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #f6c54a, #d39d2b);
+    border: none;
+    color: #111;
+    font-weight: 700;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #1cae63, #13904c);
+    border: none;
+}
+
+.form-control {
+    border-radius: 10px;
+}
+
+input[type="number"],
+input[type="text"] {
+    min-width: 80px;
+}
+
+.total-cell {
+    font-weight: 700;
+    color: #0b7d3d;
+}
+
+.confidence-low {
+    background: rgba(255, 204, 0, 0.15);
+}
+
+.confidence-medium {
+    background: rgba(30, 144, 255, 0.08);
+}
