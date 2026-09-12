@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from processing.ocr import extract_matches_from_image, extract_results_from_image, extract_scores_from_image
+from processing.ocr import clean_team_name, extract_matches_from_image, extract_results_from_image, extract_scores_from_image
 
 
 def create_synthetic_odds_image(path: Path):
@@ -79,3 +79,9 @@ def test_extract_results_keeps_team_association(monkeypatch):
     assert results[1]["score"] == "1:0"
     assert results[2]["score"] == "0:0"
     assert results[3]["away_team"] == "Sheffield U"
+
+
+def test_clean_team_name_removes_ocr_icon_noise():
+    assert clean_team_name("Brighton vas") == "Brighton"
+    assert clean_team_name("Aston fat") == "Aston"
+    assert clean_team_name("West Ham") == "West Ham"
