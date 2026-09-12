@@ -242,7 +242,8 @@ def clean_team_name(name: str) -> str:
     cleaned = re.sub(r"(?i)\s+(?:vas|fat|het|rat|fet)$", "", cleaned)
     cleaned = re.sub(r"(?i)(?:\d+[A-Za-z]+|[A-Za-z]+\d+)$", "", cleaned)
     cleaned = re.sub(r"(?i)(?:\d+\s*[A-Za-z]+)$", "", cleaned)
-    cleaned = re.sub(r"(?i)(?:[lI]{1,2}\d+|[lI]+)$", "", cleaned)
+    cleaned = re.sub(r"(?i)\s+[lI]{1,2}\d+$", "", cleaned)
+    cleaned = re.sub(r"(?i)\s+[lI]+$", "", cleaned)
     cleaned = re.sub(r"[^A-Za-z0-9 .&'’/-]", "", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
@@ -431,25 +432,39 @@ def analyze_image(image_path: str, results_image_path: str | None = None) -> Dic
 
     rows = []
     for idx, match in enumerate(extracted, start=1):
+        matched_result = next(
+            (
+                result
+                for result in extracted_results
+                if teams_match(match.get("home_team", ""), result["home_team"])
+                and teams_match(match.get("away_team", ""), result["away_team"])
+            ),
+            None,
+        )
+        home_team = match.get("home_team", "").strip()
+        away_team = match.get("away_team", "").strip()
+        if matched_result:
+            if len(matched_result["home_team"].split()) > len(home_team.split()) or (
+                len(matched_result["home_team"]) > len(home_team)
+                and " " in matched_result["home_team"]
+            ):
+                home_team = matched_result["home_team"]
+            if len(matched_result["away_team"].split()) > len(away_team.split()) or (
+                len(matched_result["away_team"]) > len(away_team)
+                and " " in matched_result["away_team"]
+            ):
+                away_team = matched_result["away_team"]
         cleaned = {
             "id": idx,
-            "home_team": match.get("home_team", "Unknown").strip(),
-            "away_team": match.get("away_team", "Unknown").strip(),
+            "home_team": home_team or "Unknown",
+            "away_team": away_team or "Unknown",
             "home_odds": match.get("home_odds"),
             "draw_odds": match.get("draw_odds"),
             "away_odds": match.get("away_odds"),
             "btts_yes": match.get("btts_yes"),
             "btts_no": match.get("btts_no"),
             "total": match.get("total"),
-            "result_score": next(
-                (
-                    result["score"]
-                    for result in extracted_results
-                    if teams_match(match.get("home_team", ""), result["home_team"])
-                    and teams_match(match.get("away_team", ""), result["away_team"])
-                ),
-                None,
-            ),
+            "result_score": matched_result["score"] if matched_result else None,
             "confidence": match.get("confidence", "low"),
             "raw_text": match.get("raw_text", ""),
         }
