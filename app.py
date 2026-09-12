@@ -36,7 +36,15 @@ def index():
             filepath = UPLOAD_FOLDER / filename
             file.save(filepath)
             try:
-                result = analyze_image(str(filepath))
+                results_file = request.files.get("results_file")
+                results_path = None
+                if results_file and results_file.filename:
+                    if not allowed_file(results_file.filename):
+                        return render_template("index.html", error="Unsupported results image format.")
+                    results_filename = secure_filename(results_file.filename)
+                    results_path = UPLOAD_FOLDER / results_filename
+                    results_file.save(results_path)
+                result = analyze_image(str(filepath), str(results_path) if results_path else None)
                 return render_template("index.html", file_name=filename, result=result)
             except Exception as exc:
                 return render_template("index.html", error=f"Error processing image: {exc}")
@@ -63,7 +71,15 @@ def api_analyze():
     file.save(filepath)
 
     try:
-        data = analyze_image(str(filepath))
+        results_file = request.files.get("results_file")
+        results_path = None
+        if results_file and results_file.filename:
+            if not allowed_file(results_file.filename):
+                return jsonify({"error": "Unsupported results image format."}), 400
+            results_filename = secure_filename(results_file.filename)
+            results_path = UPLOAD_FOLDER / results_filename
+            results_file.save(results_path)
+        data = analyze_image(str(filepath), str(results_path) if results_path else None)
         return jsonify(data)
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
@@ -84,6 +100,7 @@ def api_recalculate():
             "away_odds": float(row.get("away_odds", 0) or 0),
             "btts_yes": float(row.get("btts_yes", 0) or 0),
             "btts_no": float(row.get("btts_no", 0) or 0),
+            "result_score": row.get("result_score") or None,
         }
         match["total"] = calculate_result(
             match["home_odds"],

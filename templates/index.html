@@ -15,14 +15,18 @@
 
                 <form id="upload-form" method="post" enctype="multipart/form-data">
                     <div class="row g-3 align-items-end justify-content-center">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Upload Screenshot</label>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Odds Screenshot</label>
                             <input class="form-control" type="file" name="file" id="file-input" accept=".jpg,.jpeg,.png,.webp" required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Results Screenshot (optional)</label>
+                            <input class="form-control" type="file" name="results_file" id="results-file-input" accept=".jpg,.jpeg,.png,.webp">
+                        </div>
+                        <div class="col-md-2">
                             <button class="btn btn-primary w-100" type="submit" id="analyze-btn">Analyze Image</button>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <button class="btn btn-outline-secondary w-100" type="button" id="clear-btn">Clear Results</button>
                         </div>
                     </div>
@@ -66,6 +70,7 @@
                                     <th>YES</th>
                                     <th>NO</th>
                                     <th>Total</th>
+                                    <th>Result</th>
                                 </tr>
                             </thead>
                             <tbody id="results-body"></tbody>

@@ -69,6 +69,13 @@ def extract_text_from_image(image_path: str) -> str:
     return text
 
 
+def extract_scores_from_image(image_path: str) -> List[str]:
+    """Extract final scores in top-to-bottom order from a results screenshot."""
+    text = extract_text_from_image(image_path)
+    scores = re.findall(r"(?<!\d)(\d{1,2})\s*[:\-]\s*(\d{1,2})(?!\d)", text)
+    return [f"{home}:{away}" for home, away in scores]
+
+
 def detect_match_rows(image_path: str):
     image = cv2.imread(image_path)
     if image is None:
@@ -370,8 +377,12 @@ def extract_matches_from_image(image_path: str) -> List[Dict[str, Any]]:
     return matches
 
 
-def analyze_image(image_path: str) -> Dict[str, Any]:
+def analyze_image(image_path: str, results_image_path: str | None = None) -> Dict[str, Any]:
     extracted = extract_matches_from_image(image_path)
+    result_scores = []
+    if results_image_path:
+        result_scores = extract_scores_from_image(results_image_path)
+
     rows = []
     for idx, match in enumerate(extracted, start=1):
         cleaned = {
@@ -384,6 +395,7 @@ def analyze_image(image_path: str) -> Dict[str, Any]:
             "btts_yes": match.get("btts_yes"),
             "btts_no": match.get("btts_no"),
             "total": match.get("total"),
+            "result_score": result_scores[idx - 1] if idx <= len(result_scores) else None,
             "confidence": match.get("confidence", "low"),
             "raw_text": match.get("raw_text", ""),
         }
@@ -392,5 +404,6 @@ def analyze_image(image_path: str) -> Dict[str, Any]:
     return {
         "matches": rows,
         "row_count": len(rows),
+        "result_score_count": len(result_scores),
         "message": f"Detected {len(rows)} match rows.",
     }

@@ -1,5 +1,6 @@
 const form = document.getElementById('upload-form');
 const fileInput = document.getElementById('file-input');
+const resultsFileInput = document.getElementById('results-file-input');
 const loading = document.getElementById('loading');
 const resultsSection = document.getElementById('results-section');
 const resultsBody = document.getElementById('results-body');
@@ -41,6 +42,7 @@ function renderRows(rows) {
             <td><input class="form-control form-control-sm" data-field="btts_yes" data-index="${index}" value="${row.btts_yes ?? ''}"></td>
             <td><input class="form-control form-control-sm" data-field="btts_no" data-index="${index}" value="${row.btts_no ?? ''}"></td>
             <td class="total-cell">${row.total !== null && row.total !== undefined ? Number(row.total).toFixed(2) : '—'}</td>
+            <td class="result-score-cell">${escapeHtml(row.result_score || '—')}</td>
         `;
         resultsBody.appendChild(tr);
     });
@@ -68,6 +70,9 @@ form.addEventListener('submit', async function (event) {
     setLoadingState(true);
     const formData = new FormData();
     formData.append('file', file);
+    if (resultsFileInput.files[0]) {
+        formData.append('results_file', resultsFileInput.files[0]);
+    }
 
     try {
         const response = await fetch('/api/analyze', {
@@ -99,6 +104,7 @@ clearBtn.addEventListener('click', function () {
     resultsBody.innerHTML = '';
     resultsSection.classList.add('d-none');
     fileInput.value = '';
+    resultsFileInput.value = '';
 });
 
 recalcBtn.addEventListener('click', async function () {
@@ -118,6 +124,7 @@ recalcBtn.addEventListener('click', async function () {
             away_odds: values.away_odds,
             btts_yes: values.btts_yes,
             btts_no: values.btts_no,
+            result_score: row.result_score,
         };
     });
 
@@ -139,6 +146,7 @@ recalcBtn.addEventListener('click', async function () {
             btts_yes: Number(row.btts_yes),
             btts_no: Number(row.btts_no),
             total: Number(row.total),
+            result_score: row.result_score,
             confidence: 'medium'
         })));
     }
@@ -155,10 +163,11 @@ exportCsvBtn.addEventListener('click', function () {
         row.btts_yes,
         row.btts_no,
         row.total,
+        row.result_score,
     ]);
 
     const csvContent = [
-        ['Match', '1', 'X', '2', 'YES', 'NO', 'Total'],
+        ['Match', '1', 'X', '2', 'YES', 'NO', 'Total', 'Result'],
         ...rows,
     ].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
 

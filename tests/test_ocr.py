@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from processing.ocr import extract_matches_from_image
+from processing.ocr import extract_matches_from_image, extract_scores_from_image
 
 
 def create_synthetic_odds_image(path: Path):
@@ -55,3 +55,12 @@ def test_extract_matches_from_synthetic_drawing(tmp_path):
     assert matches[0]["away_odds"] is not None
     assert matches[0]["btts_yes"] is not None
     assert matches[0]["btts_no"] is not None
+
+
+def test_extract_scores_from_results_image(monkeypatch):
+    monkeypatch.setattr(
+        "processing.ocr.extract_text_from_image",
+        lambda _path: "Aston Villa 2:1 Everton\nWest Ham 0 - 0 Londn Reds",
+    )
+
+    assert extract_scores_from_image("results.png") == ["2:1", "0:0"]
