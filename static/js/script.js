@@ -4,6 +4,7 @@ const resultsFileInput = document.getElementById('results-file-input');
 const loading = document.getElementById('loading');
 const resultsSection = document.getElementById('results-section');
 const resultsBody = document.getElementById('results-body');
+const resultsTable = document.querySelector('.results-table');
 const clearBtn = document.getElementById('clear-btn');
 const recalcBtn = document.getElementById('recalculate-btn');
 const downloadImageBtn = document.getElementById('download-image-btn');
@@ -157,16 +158,28 @@ downloadImageBtn.addEventListener('click', async function () {
 
     downloadImageBtn.disabled = true;
     try {
-        const canvas = await html2canvas(resultsSection, {
+        const tableCanvas = await html2canvas(resultsTable, {
             backgroundColor: '#ffffff',
             scale: 2,
             useCORS: true,
         });
-        canvas.toBlob(function (blob) {
+        const border = 16;
+        const imageCanvas = document.createElement('canvas');
+        imageCanvas.width = tableCanvas.width + border * 2;
+        imageCanvas.height = tableCanvas.height + border * 2;
+        const imageContext = imageCanvas.getContext('2d');
+        imageContext.fillStyle = '#ffffff';
+        imageContext.fillRect(0, 0, imageCanvas.width, imageCanvas.height);
+        imageContext.strokeStyle = '#1f2937';
+        imageContext.lineWidth = 6;
+        imageContext.strokeRect(3, 3, imageCanvas.width - 6, imageCanvas.height - 6);
+        imageContext.drawImage(tableCanvas, border, border);
+        imageCanvas.toBlob(function (blob) {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'virtual_odds_results.png';
+            const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 17);
+            link.download = `virtual_odds_results_${timestamp}.png`;
             link.click();
             URL.revokeObjectURL(url);
         }, 'image/png');
