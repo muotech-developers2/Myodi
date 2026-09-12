@@ -239,9 +239,10 @@ def clean_team_name(name: str) -> str:
         return ""
     cleaned = re.sub(r"\s+", " ", name.strip())
     cleaned = cleaned.replace("_", " ")
+    cleaned = re.sub(r"(?i)^(?:rf|ap|qf|q|4p|4)\s+", "", cleaned)
     if cleaned.lower() == "astonv":
         cleaned = "Aston V"
-    cleaned = re.sub(r"(?i)\s+(?:vas|fat|het|rat|fet)$", "", cleaned)
+    cleaned = re.sub(r"(?i)\s+(?:vas|fat|het|rat|fet|ree|veo|res|ve)$", "", cleaned)
     cleaned = re.sub(r"(?i)(?:\d+[A-Za-z]+|[A-Za-z]+\d+)$", "", cleaned)
     cleaned = re.sub(r"(?i)(?:\d+\s*[A-Za-z]+)$", "", cleaned)
     cleaned = re.sub(r"(?i)\s+[lI]{1,2}\d+$", "", cleaned)
@@ -249,6 +250,25 @@ def clean_team_name(name: str) -> str:
     cleaned = re.sub(r"[^A-Za-z0-9 .&'’/-]", "", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
+
+
+def extract_team_names_from_row(image, box):
+    x, y, w, h = box
+    y1 = max(0, y - 20)
+    y2 = min(image.shape[0], y + h + 20)
+    x1 = max(0, x - 10)
+    x2 = min(image.shape[1], x1 + int(w * 0.38))
+    team_area = image[y1:y2, x1:x2]
+    team_area = cv2.resize(team_area, None, fx=4.0, fy=4.0, interpolation=cv2.INTER_CUBIC)
+    text = pytesseract.image_to_string(team_area, config="--psm 6 --oem 3")
+    names = [clean_team_name(line) for line in text.splitlines() if clean_team_name(line)]
+    return names[:2]
+
+
+def should_prefer_team_name(current: str, candidate: str) -> bool:
+    current_key = re.sub(r"[^a-z0-9]", "", current.lower())
+    candidate_key = re.sub(r"[^a-z0-9]", "", candidate.lower())
+    return bool(candidate and (current_key in candidate_key and len(candidate_key) > len(current_key)))
 
 
 def parse_match_row(row_text: str) -> Dict[str, Any]:
@@ -407,6 +427,14 @@ def extract_matches_from_image(image_path: str) -> List[Dict[str, Any]]:
             continue
         match = parse_match_row(text)
         if match.get("home_team") and match.get("away_team"):
+            focused_names = extract_team_names_from_row(image, (x, y, w, h))
+            if len(focused_names) == 2:
+                if should_prefer_team_name(match["home_team"], focused_names[0]):
+                    match["home_team"] = focused_names[0]
+                if should_prefer_team_name(match["away_team"], focused_names[1]):
+                    match["away_team"] = focused_names[1]
+                match["home_team"] = clean_team_name(match["home_team"])
+                match["away_team"] = clean_team_name(match["away_team"])
             matches.append(match)
 
     for match in matches:
