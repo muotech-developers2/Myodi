@@ -72,8 +72,37 @@ def extract_text_from_image(image_path: str) -> str:
 def extract_scores_from_image(image_path: str) -> List[str]:
     """Extract final scores in top-to-bottom order from a results screenshot."""
     text = extract_text_from_image(image_path)
-    scores = re.findall(r"(?<!\d)(\d{1,2})\s*[:\-]\s*(\d{1,2})(?!\d)", text)
+    scores = re.findall(r"(?<!\d)(\d{1,2})\s*(?::|-)\s*(\d{1,2})(?!\d)", text)
+    if not scores:
+        scores = re.findall(r"(?<!\d)(\d)\s+(\d)(?!\d)", text)
     return [f"{home}:{away}" for home, away in scores]
+
+
+def extract_results_from_image(image_path: str) -> List[Dict[str, str]]:
+    """Extract labeled final scores so results can be matched to odds by teams."""
+    text = extract_text_from_image(image_path)
+    results = []
+    patterns = (
+        re.compile(r"^\s*(?P<home>[A-Za-z][A-Za-z .&'’/-]*?)\s+(?P<home_score>\d{1,2})\s*(?::|-)\s*(?P<away_score>\d{1,2})\s+(?P<away>[A-Za-z][A-Za-z .&'’/-]*)\s*$"),
+        re.compile(r"^\s*(?P<home>[A-Za-z][A-Za-z .&'’/-]*?)\s+(?P<home_score>\d)\s+(?P<away_score>\d)\s+(?P<away>[A-Za-z][A-Za-z .&'’/-]*)\s*$"),
+    )
+    for line in text.splitlines():
+        for pattern in patterns:
+            match = pattern.match(line)
+            if match:
+                results.append({
+                    "home_team": clean_team_name(match.group("home")),
+                    "away_team": clean_team_name(match.group("away")),
+                    "score": f"{match.group('home_score')}:{match.group('away_score')}",
+                })
+                break
+    return results
+
+
+def teams_match(first: str, second: str) -> bool:
+    first_key = re.sub(r"[^a-z0-9]", "", first.lower())
+    second_key = re.sub(r"[^a-z0-9]", "", second.lower())
+    return bool(first_key and second_key and (first_key == second_key or first_key in second_key or second_key in first_key))
 
 
 def detect_match_rows(image_path: str):
@@ -379,9 +408,9 @@ def extract_matches_from_image(image_path: str) -> List[Dict[str, Any]]:
 
 def analyze_image(image_path: str, results_image_path: str | None = None) -> Dict[str, Any]:
     extracted = extract_matches_from_image(image_path)
-    result_scores = []
+    extracted_results = []
     if results_image_path:
-        result_scores = extract_scores_from_image(results_image_path)
+        extracted_results = extract_results_from_image(results_image_path)
 
     rows = []
     for idx, match in enumerate(extracted, start=1):
@@ -395,7 +424,15 @@ def analyze_image(image_path: str, results_image_path: str | None = None) -> Dic
             "btts_yes": match.get("btts_yes"),
             "btts_no": match.get("btts_no"),
             "total": match.get("total"),
-            "result_score": result_scores[idx - 1] if idx <= len(result_scores) else None,
+            "result_score": next(
+                (
+                    result["score"]
+                    for result in extracted_results
+                    if teams_match(match.get("home_team", ""), result["home_team"])
+                    and teams_match(match.get("away_team", ""), result["away_team"])
+                ),
+                None,
+            ),
             "confidence": match.get("confidence", "low"),
             "raw_text": match.get("raw_text", ""),
         }
@@ -404,6 +441,6 @@ def analyze_image(image_path: str, results_image_path: str | None = None) -> Dic
     return {
         "matches": rows,
         "row_count": len(rows),
-        "result_score_count": len(result_scores),
+        "result_score_count": len(extracted_results),
         "message": f"Detected {len(rows)} match rows.",
     }

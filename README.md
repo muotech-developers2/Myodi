@@ -5,12 +5,18 @@ A Flask application that uploads football betting screenshots, runs OCR and imag
 ## Features
 
 - Upload JPG, JPEG, PNG, and WEBP screenshots
+- Optionally upload a matching results screenshot to associate final scores by team names
 - Show an image preview before analysis
 - Use OpenCV preprocessing and Tesseract OCR for row and odds detection
 - Extract team names and five odds per match row
 - Calculate the total for each match
 - Allow users to manually adjust extracted values and recalculate
 - Export results to CSV
+
+When a results screenshot is provided, final scores such as `2:1` are matched to
+the corresponding home and away teams. The results screenshot may contain games
+that are missing from the odds screenshot; unmatched games are ignored. Without
+a results screenshot, the app calculates odds totals as usual.
 
 ## Project Structure
 
