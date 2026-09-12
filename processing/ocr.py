@@ -1,5 +1,6 @@
 import re
 import os
+from difflib import SequenceMatcher
 from typing import List, Dict, Any
 from pathlib import Path
 
@@ -83,17 +84,24 @@ def extract_results_from_image(image_path: str) -> List[Dict[str, str]]:
     text = extract_text_from_image(image_path)
     results = []
     patterns = (
-        re.compile(r"^\s*(?P<home>[A-Za-z][A-Za-z .&'’/-]*?)\s+(?P<home_score>\d{1,2})\s*(?::|-)\s*(?P<away_score>\d{1,2})\s+(?P<away>[A-Za-z][A-Za-z .&'’/-]*)\s*$"),
-        re.compile(r"^\s*(?P<home>[A-Za-z][A-Za-z .&'’/-]*?)\s+(?P<home_score>\d)\s+(?P<away_score>\d)\s+(?P<away>[A-Za-z][A-Za-z .&'’/-]*)\s*$"),
+        re.compile(r"^\s*(?P<home>[A-Za-z][A-Za-z .&'’/-]*?)\s+(?P<home_score>[0-9OQD]{1,2})\s*(?::|-)\s*(?P<away_score>[0-9OQD]{1,2})\s+(?P<away>[A-Za-z][A-Za-z .&'’/-]*)\s*$"),
+        re.compile(r"^\s*(?P<home>[A-Za-z][A-Za-z .&'’/-]*?)\s+(?P<home_score>[0-9OQD]{1,2})\s+(?P<away_score>[0-9OQD]{1,2})\s+(?P<away>[A-Za-z][A-Za-z .&'’/-]*)\s*$"),
     )
     for line in text.splitlines():
         for pattern in patterns:
             match = pattern.match(line)
             if match:
+                def normalize_score_token(token):
+                    if set(token) <= {"O", "Q", "D"}:
+                        return "0"
+                    return token.replace("O", "0").replace("Q", "0").replace("D", "0")
+
+                home_score = normalize_score_token(match.group("home_score"))
+                away_score = normalize_score_token(match.group("away_score"))
                 results.append({
                     "home_team": clean_team_name(match.group("home")),
                     "away_team": clean_team_name(match.group("away")),
-                    "score": f"{match.group('home_score')}:{match.group('away_score')}",
+                    "score": f"{home_score}:{away_score}",
                 })
                 break
     return results
@@ -102,7 +110,15 @@ def extract_results_from_image(image_path: str) -> List[Dict[str, str]]:
 def teams_match(first: str, second: str) -> bool:
     first_key = re.sub(r"[^a-z0-9]", "", first.lower())
     second_key = re.sub(r"[^a-z0-9]", "", second.lower())
-    return bool(first_key and second_key and (first_key == second_key or first_key in second_key or second_key in first_key))
+    if not first_key or not second_key:
+        return False
+    if first_key == second_key or first_key in second_key or second_key in first_key:
+        return True
+    first_words = re.findall(r"[a-z0-9]+", first.lower())
+    second_words = re.findall(r"[a-z0-9]+", second.lower())
+    if any(len(left) >= 4 and len(right) >= 4 and (left.startswith(right) or right.startswith(left)) for left in first_words for right in second_words):
+        return True
+    return SequenceMatcher(None, first_key, second_key).ratio() >= 0.72
 
 
 def detect_match_rows(image_path: str):

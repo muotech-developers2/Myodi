@@ -69,11 +69,13 @@ def test_extract_scores_from_results_image(monkeypatch):
 def test_extract_results_keeps_team_association(monkeypatch):
     monkeypatch.setattr(
         "processing.ocr.extract_text_from_image",
-        lambda _path: "Manchester Reds 1 2 Liverpool\nBurnley 1 0 Leicester\nWest Ham 2 2 Sheffield U",
+        lambda _path: "Manchester Reds 1 2 Liverpool\nBurnley 1 O Leicester\nSouthampton Q OQ Tottenham\nWest Ham 2 2 Sheffield U",
     )
 
     results = extract_results_from_image("results.png")
 
     assert results[0]["home_team"] == "Manchester Reds"
     assert results[0]["score"] == "1:2"
-    assert results[2]["away_team"] == "Sheffield U"
+    assert results[1]["score"] == "1:0"
+    assert results[2]["score"] == "0:0"
+    assert results[3]["away_team"] == "Sheffield U"
