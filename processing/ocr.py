@@ -11,6 +11,14 @@ from PIL import Image, ImageOps, ImageFilter
 from pytesseract import Output
 
 
+KNOWN_TEAM_NAMES = (
+    "Manchester Reds", "Liverpool", "Aston V", "London Reds", "Everton", "Wolves",
+    "Southampton", "Tottenham", "West Ham", "Sheffield U", "London Blues", "Fulham",
+    "Leeds", "Newcastle", "West Brom", "Manchester Blue", "Brighton", "Palace",
+    "Leicester", "Burnley",
+)
+
+
 # Configure Tesseract if available in a custom location.
 # On Windows this may need to be set explicitly.
 # Example: pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
@@ -99,8 +107,8 @@ def extract_results_from_image(image_path: str) -> List[Dict[str, str]]:
                 home_score = normalize_score_token(match.group("home_score"))
                 away_score = normalize_score_token(match.group("away_score"))
                 results.append({
-                    "home_team": clean_team_name(match.group("home")),
-                    "away_team": clean_team_name(match.group("away")),
+                    "home_team": canonical_team_name(match.group("home")),
+                    "away_team": canonical_team_name(match.group("away")),
                     "score": f"{home_score}:{away_score}",
                 })
                 break
@@ -252,6 +260,22 @@ def clean_team_name(name: str) -> str:
     return cleaned
 
 
+def canonical_team_name(name: str) -> str:
+    cleaned = clean_team_name(name)
+    if not cleaned:
+        return cleaned
+    cleaned_key = re.sub(r"[^a-z0-9]", "", cleaned.lower())
+    best_name = cleaned
+    best_score = 0.0
+    for known_name in KNOWN_TEAM_NAMES:
+        known_key = re.sub(r"[^a-z0-9]", "", known_name.lower())
+        score = SequenceMatcher(None, cleaned_key, known_key).ratio()
+        if score > best_score:
+            best_name = known_name
+            best_score = score
+    return best_name if best_score >= 0.72 else cleaned
+
+
 def extract_team_names_from_row(image, box):
     x, y, w, h = box
     y1 = max(0, y - 20)
@@ -261,7 +285,7 @@ def extract_team_names_from_row(image, box):
     team_area = image[y1:y2, x1:x2]
     team_area = cv2.resize(team_area, None, fx=4.0, fy=4.0, interpolation=cv2.INTER_CUBIC)
     text = pytesseract.image_to_string(team_area, config="--psm 6 --oem 3")
-    names = [clean_team_name(line) for line in text.splitlines() if clean_team_name(line)]
+    names = [canonical_team_name(line) for line in text.splitlines() if canonical_team_name(line)]
     return names[:2]
 
 
@@ -351,8 +375,8 @@ def parse_match_row(row_text: str) -> Dict[str, Any]:
             else:
                 home = ""
 
-    home = clean_team_name(home)
-    away = clean_team_name(away)
+    home = canonical_team_name(home)
+    away = canonical_team_name(away)
 
     if not home and not away:
         row_words = [w for w in re.findall(r"[A-Za-z]+", text) if len(w) >= 2]
@@ -433,8 +457,8 @@ def extract_matches_from_image(image_path: str) -> List[Dict[str, Any]]:
                     match["home_team"] = focused_names[0]
                 if should_prefer_team_name(match["away_team"], focused_names[1]):
                     match["away_team"] = focused_names[1]
-                match["home_team"] = clean_team_name(match["home_team"])
-                match["away_team"] = clean_team_name(match["away_team"])
+                match["home_team"] = canonical_team_name(match["home_team"])
+                match["away_team"] = canonical_team_name(match["away_team"])
             matches.append(match)
 
     for match in matches:

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from processing.ocr import clean_team_name, extract_matches_from_image, extract_results_from_image, extract_scores_from_image
+from processing.ocr import canonical_team_name, clean_team_name, extract_matches_from_image, extract_results_from_image, extract_scores_from_image
 
 
 def create_synthetic_odds_image(path: Path):
@@ -89,3 +89,5 @@ def test_clean_team_name_removes_ocr_icon_noise():
     assert clean_team_name("4P Brighton") == "Brighton"
     assert clean_team_name("Liverpool") == "Liverpool"
     assert clean_team_name("West Ham") == "West Ham"
+    assert canonical_team_name("Liverpoo") == "Liverpool"
+    assert canonical_team_name("Brigh") == "Brighton"
