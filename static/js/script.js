@@ -6,7 +6,7 @@ const resultsSection = document.getElementById('results-section');
 const resultsBody = document.getElementById('results-body');
 const clearBtn = document.getElementById('clear-btn');
 const recalcBtn = document.getElementById('recalculate-btn');
-const downloadPdfBtn = document.getElementById('download-pdf-btn');
+const downloadImageBtn = document.getElementById('download-image-btn');
 
 let currentRows = [];
 
@@ -152,30 +152,25 @@ recalcBtn.addEventListener('click', async function () {
     }
 });
 
-downloadPdfBtn.addEventListener('click', function () {
+downloadImageBtn.addEventListener('click', async function () {
     if (!currentRows.length) return;
 
-    const rows = currentRows.map(row => [
-        `${row.home_team} vs ${row.away_team}`,
-        row.home_odds,
-        row.draw_odds,
-        row.away_odds,
-        row.btts_yes,
-        row.btts_no,
-        row.total,
-        row.result_score,
-    ]);
-
-    const { jsPDF } = window.jspdf;
-    const document = new jsPDF({ orientation: 'landscape' });
-    document.setFontSize(16);
-    document.text('Virtual Game Odds Results', 14, 15);
-    document.autoTable({
-        startY: 22,
-        head: [['Match', '1', 'X', '2', 'YES', 'NO', 'Total', 'Result']],
-        body: rows,
-        styles: { fontSize: 9, cellPadding: 3 },
-        headStyles: { fillColor: [25, 135, 84] },
-    });
-    document.save('virtual_odds_results.pdf');
+    downloadImageBtn.disabled = true;
+    try {
+        const canvas = await html2canvas(resultsSection, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+        });
+        canvas.toBlob(function (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'virtual_odds_results.png';
+            link.click();
+            URL.revokeObjectURL(url);
+        }, 'image/png');
+    } finally {
+        downloadImageBtn.disabled = false;
+    }
 });
