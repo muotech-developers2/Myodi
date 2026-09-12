@@ -6,7 +6,7 @@ const resultsSection = document.getElementById('results-section');
 const resultsBody = document.getElementById('results-body');
 const clearBtn = document.getElementById('clear-btn');
 const recalcBtn = document.getElementById('recalculate-btn');
-const exportCsvBtn = document.getElementById('export-csv-btn');
+const downloadPdfBtn = document.getElementById('download-pdf-btn');
 
 let currentRows = [];
 
@@ -152,7 +152,7 @@ recalcBtn.addEventListener('click', async function () {
     }
 });
 
-exportCsvBtn.addEventListener('click', function () {
+downloadPdfBtn.addEventListener('click', function () {
     if (!currentRows.length) return;
 
     const rows = currentRows.map(row => [
@@ -166,16 +166,16 @@ exportCsvBtn.addEventListener('click', function () {
         row.result_score,
     ]);
 
-    const csvContent = [
-        ['Match', '1', 'X', '2', 'YES', 'NO', 'Total', 'Result'],
-        ...rows,
-    ].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'virtual_odds_results.csv';
-    link.click();
-    URL.revokeObjectURL(url);
+    const { jsPDF } = window.jspdf;
+    const document = new jsPDF({ orientation: 'landscape' });
+    document.setFontSize(16);
+    document.text('Virtual Game Odds Results', 14, 15);
+    document.autoTable({
+        startY: 22,
+        head: [['Match', '1', 'X', '2', 'YES', 'NO', 'Total', 'Result']],
+        body: rows,
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [25, 135, 84] },
+    });
+    document.save('virtual_odds_results.pdf');
 });

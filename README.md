@@ -11,7 +11,7 @@ A Flask application that uploads football betting screenshots, runs OCR and imag
 - Extract team names and five odds per match row
 - Calculate the total for each match
 - Allow users to manually adjust extracted values and recalculate
-- Export results to CSV
+- Download results as a PDF
 
 When a results screenshot is provided, final scores such as `2:1` are matched to
 the corresponding home and away teams. The results screenshot may contain games
