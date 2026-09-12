@@ -239,6 +239,8 @@ def clean_team_name(name: str) -> str:
         return ""
     cleaned = re.sub(r"\s+", " ", name.strip())
     cleaned = cleaned.replace("_", " ")
+    if cleaned.lower() == "astonv":
+        cleaned = "Aston V"
     cleaned = re.sub(r"(?i)\s+(?:vas|fat|het|rat|fet)$", "", cleaned)
     cleaned = re.sub(r"(?i)(?:\d+[A-Za-z]+|[A-Za-z]+\d+)$", "", cleaned)
     cleaned = re.sub(r"(?i)(?:\d+\s*[A-Za-z]+)$", "", cleaned)

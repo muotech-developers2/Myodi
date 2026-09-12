@@ -84,5 +84,6 @@ def test_extract_results_keeps_team_association(monkeypatch):
 def test_clean_team_name_removes_ocr_icon_noise():
     assert clean_team_name("Brighton vas") == "Brighton"
     assert clean_team_name("Aston fat") == "Aston"
+    assert clean_team_name("AstonV") == "Aston V"
     assert clean_team_name("Liverpool") == "Liverpool"
     assert clean_team_name("West Ham") == "West Ham"
